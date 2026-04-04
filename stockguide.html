@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stock Guide FII · Mar/2026</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="css/styles.css" />
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+</head>
+
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="topbar-title">
+        <span class="eyebrow">Stock Guide</span>
+        <h1>Fundos Imobiliarios</h1>
+      </div>
+
+      <div class="topbar-meta">
+        <div class="meta-card">
+          <span class="meta-label">Referencia</span>
+          <strong>30/03/2026</strong>
+        </div>
+        <div class="meta-card">
+          <span class="meta-label">Base</span>
+          <strong>257 FIIs</strong>
+        </div>
+        <div class="meta-card">
+          <span class="meta-label">Fonte</span>
+          <strong>BTG Pactual</strong>
+        </div>
+      </div>
+    </header>
+
+    <main class="dashboard">
+      <aside class="filters-panel fade-in">
+        <div class="panel-heading">
+          <div>
+            <span class="panel-kicker">Mesa de filtros</span>
+            <h2>Combinacao de cortes</h2>
+          </div>
+          <p>Selecione varios filtros ao mesmo tempo. O zoom acompanha o recorte ativo.</p>
+        </div>
+
+        <div class="filters-layout">
+          <section class="filter-card filter-card-segment">
+            <div class="filter-card-header">
+              <span class="filter-label">Segmento</span>
+            </div>
+            <div class="pills pills-segment" id="seg-pills"></div>
+          </section>
+
+          <div class="filter-side-stack">
+            <section class="filter-card">
+              <div class="filter-card-header">
+                <span class="filter-label">Tamanho PL</span>
+              </div>
+              <div class="pills pills-compact" id="tam-pills"></div>
+            </section>
+
+            <section class="filter-card">
+              <div class="filter-card-header">
+                <span class="filter-label">IFIX</span>
+              </div>
+              <div class="pills pills-compact" id="ifix-pills"></div>
+            </section>
+
+            <section class="filter-card">
+              <div class="filter-card-header">
+                <span class="filter-label">Gestora</span>
+              </div>
+              <div class="select-wrap">
+                <select id="gestora-select" class="filter-select">
+                  <option value="todas">Todas</option>
+                </select>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        <div class="filters-footnote">
+          Clique em um segmento para aproximar o grafico e use a legenda para ocultar grupos visualmente.
+        </div>
+      </aside>
+
+      <section class="main-panel">
+        <div class="stats-row fade-in">
+          <article class="stat-card stat-card-highlight">
+            <span class="stat-label">FIIs exibidos</span>
+            <strong class="stat-value" id="stat-count">—</strong>
+            <span class="stat-sub">de 257 com dados completos</span>
+          </article>
+
+          <article class="stat-card">
+            <span class="stat-label">Yield ponta medio</span>
+            <strong class="stat-value gold" id="stat-dy">—</strong>
+            <span class="stat-sub">ultima distribuicao x 12 / cotacao atual</span>
+          </article>
+
+          <article class="stat-card">
+            <span class="stat-label">P/VP medio</span>
+            <strong class="stat-value" id="stat-pvp">—</strong>
+            <span class="stat-sub">preco / valor patrimonial</span>
+          </article>
+
+          <article class="stat-card">
+            <span class="stat-label">PL total</span>
+            <strong class="stat-value" id="stat-pl">—</strong>
+            <span class="stat-sub">patrimonio liquido somado</span>
+          </article>
+
+          <article class="stat-card">
+            <span class="stat-label">Valor de Mercado</span>
+            <strong class="stat-value" id="stat-vm">—</strong>
+            <span class="stat-sub">capitalizacao somada</span>
+          </article>
+        </div>
+
+        <section class="chart-panel fade-in">
+          <div class="chart-topbar">
+            <div class="chart-title-wrap">
+              <span class="panel-kicker">Mapa relativo</span>
+              <h2>Yield Ponta vs P/VP</h2>
+              <p>Tamanho da bolha proporcional ao patrimonio liquido. Clique em qualquer bolha para detalhes.</p>
+            </div>
+
+            <div class="chart-actions">
+              <div class="chart-chip">Scroll para zoom</div>
+              <div class="chart-chip">Arraste para mover</div>
+              <button class="btn-reset-zoom" id="btn-reset-zoom" title="Resetar zoom">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                  <path d="M3 3v5h5" />
+                </svg>
+                Resetar zoom
+              </button>
+            </div>
+          </div>
+
+          <div class="chart-stage">
+            <div class="chart-wrapper">
+              <canvas id="bubbleChart"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-footer">
+            <p class="chart-hint">
+              Use o scroll do mouse para dar zoom, arraste para mover e clique em uma bolha para ver os detalhes do FII.
+            </p>
+            <div class="legend" id="legend"></div>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="modal-backdrop">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-top">
+        <div class="modal-ticker-row">
+          <span class="modal-ticker" id="m-ticker">—</span>
+          <span class="modal-seg-badge" id="m-seg-badge">—</span>
+        </div>
+        <button class="btn-close" id="btn-close-modal" aria-label="Fechar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+
+      <p class="modal-nome" id="m-nome">—</p>
+      <p class="modal-gestores" id="m-gestores">—</p>
+
+      <div class="modal-divider"></div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">Avaliacao &amp; Mercado</div>
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="m-label">P/VP</div>
+            <div class="m-value" id="m-pvp">—</div>
+            <div class="m-sub">preco / valor patrimonial</div>
+          </div>
+          <div class="metric-card">
+            <div class="m-label">Yield Ponta</div>
+            <div class="m-value gold" id="m-dy-ponta">—</div>
+            <div class="m-sub">ultima distribuicao x 12 / cotacao atual</div>
+          </div>
+          <div class="metric-card">
+            <div class="m-label">DY LTM</div>
+            <div class="m-value" id="m-dy-ltm">—</div>
+            <div class="m-sub">ultimos 12 meses</div>
+          </div>
+          <div class="metric-card">
+            <div class="m-label">Cotacao</div>
+            <div class="m-value" id="m-cotacao">—</div>
+            <div class="m-sub">fechamento 30/03/2026</div>
+          </div>
+          <div class="metric-card">
+            <div class="m-label">Valor de Mercado</div>
+            <div class="m-value" id="m-vm">—</div>
+            <div class="m-sub">capitalizacao</div>
+          </div>
+          <div class="metric-card">
+            <div class="m-label">Patrimonio Liquido</div>
+            <div class="m-value" id="m-vp">—</div>
+            <div class="m-sub">valor patrimonial total</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-divider"></div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">Retorno de Preco</div>
+        <div class="returns-row">
+          <div class="ret-card">
+            <div class="r-label">No Mes</div>
+            <div class="r-value" id="m-ret-mes">—</div>
+          </div>
+          <div class="ret-card">
+            <div class="r-label">No Ano</div>
+            <div class="r-value" id="m-ret-ano">—</div>
+          </div>
+          <div class="ret-card">
+            <div class="r-label">LTM (12m)</div>
+            <div class="r-value" id="m-ret-ltm">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-divider"></div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">Dividendo &amp; Liquidez</div>
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="m-label">Ultima Distribuicao</div>
+            <div class="m-value" id="m-div-mes">—</div>
+            <div class="m-sub">por cota (R$)</div>
+          </div>
+          <div class="metric-card">
+            <div class="m-label">Vol. Medio 3M</div>
+            <div class="m-value" id="m-vol">—</div>
+            <div class="m-sub">negociacao diaria</div>
+          </div>
+          <div class="metric-card">
+            <div class="m-label">% do Max. 52 sem.</div>
+            <div class="m-value" id="m-pct-max">—</div>
+            <div class="m-sub">preco atual vs maximo</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-info-row">
+        <div class="info-chip">Participacao IFIX: <strong id="m-ifix">—</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="data/fiis.js"></script>
+  <script src="js/calc.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
