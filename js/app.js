@@ -3,7 +3,19 @@ const DEFAULT_LIMITS = {
   y: { min: 0, max: 26 }
 };
 
-let FIIS_DATA = [];
+let dashboardData = getEmbeddedData();
+
+function getEmbeddedData() {
+  if (typeof FIIS_DATA !== 'undefined' && Array.isArray(FIIS_DATA)) {
+    return FIIS_DATA;
+  }
+
+  if (Array.isArray(window.FIIS_DATA)) {
+    return window.FIIS_DATA;
+  }
+
+  return [];
+}
 
 const FILTER_CONFIG = {
   segmentos: {
@@ -11,7 +23,7 @@ const FILTER_CONFIG = {
     datasetKey: 'seg',
     resetDatasetKey: 'segAll',
     resetLabel: 'Todos',
-    getOptions: () => getActiveSegments(FIIS_DATA).map(seg => ({
+    getOptions: () => getActiveSegments(dashboardData).map(seg => ({
       key: seg,
       label: seg,
       dotColor: getSegmentColor(seg).stroke
@@ -60,8 +72,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function initializeDashboard() {
   try {
-    FIIS_DATA = await loadFiisData();
-    initRadiusScale(FIIS_DATA);
+    dashboardData = await loadFiisData();
+    initRadiusScale(dashboardData);
     buildAllFilters();
     buildGestoraFilter();
     buildLegend();
@@ -74,6 +86,11 @@ async function initializeDashboard() {
 }
 
 async function loadFiisData() {
+  const embeddedData = getEmbeddedData();
+  if (embeddedData.length) {
+    return embeddedData;
+  }
+
   const response = await fetch('./data/fiis.json', { cache: 'no-store' });
   if (!response.ok) {
     throw new Error(`Falha ao carregar data/fiis.json (${response.status})`);
@@ -85,6 +102,7 @@ function showDataLoadError() {
   const chartTitle = document.querySelector('.chart-title-wrap p');
   const chartHint = document.querySelector('.chart-hint');
   const filtersFootnote = document.querySelector('.filters-footnote');
+  const isLocalFile = window.location.protocol === 'file:';
 
   document.getElementById('stat-count').textContent = 'Erro';
   document.getElementById('stat-dy').textContent = '—';
@@ -93,15 +111,21 @@ function showDataLoadError() {
   document.getElementById('stat-vm').textContent = '—';
 
   if (chartTitle) {
-    chartTitle.textContent = 'Nao foi possivel carregar data/fiis.json.';
+    chartTitle.textContent = isLocalFile
+      ? 'Abra via servidor local para carregar data/fiis.json.'
+      : 'Nao foi possivel carregar data/fiis.json.';
   }
 
   if (chartHint) {
-    chartHint.textContent = 'Confirme se o arquivo data/fiis.json existe e se o site esta sendo servido corretamente.';
+    chartHint.textContent = isLocalFile
+      ? 'Rode "py -3 auxiliar/gerar_dados.py" e abra o index.html, ou use o servidor local em http://localhost:8000.'
+      : 'Confirme se o arquivo data/fiis.json existe e se o site esta sendo servido corretamente.';
   }
 
   if (filtersFootnote) {
-    filtersFootnote.textContent = 'Os filtros serao exibidos quando o arquivo data/fiis.json estiver disponivel.';
+    filtersFootnote.textContent = isLocalFile
+      ? 'Abrindo index.html direto do disco, use preferencialmente o arquivo data/fiis.js gerado para evitar bloqueio do JSON.'
+      : 'Os filtros serao exibidos quando o arquivo data/fiis.json estiver disponivel.';
   }
 }
 
@@ -115,7 +139,7 @@ function buildGestoraFilter() {
   const select = document.getElementById('gestora-select');
   if (!select) return;
 
-  getActiveGestoras(FIIS_DATA).forEach(gestora => {
+  getActiveGestoras(dashboardData).forEach(gestora => {
     const option = document.createElement('option');
     option.value = gestora;
     option.textContent = gestora;
@@ -204,11 +228,11 @@ function hasSegmentSelection() {
 
 function buildLegend() {
   const container = document.getElementById('legend');
-  const activeSegs = getActiveSegments(FIIS_DATA);
+  const activeSegs = getActiveSegments(dashboardData);
 
   activeSegs.forEach(seg => {
     const color = getSegmentColor(seg);
-    const count = FIIS_DATA.filter(f => f.segmento === seg).length;
+    const count = dashboardData.filter(f => f.segmento === seg).length;
     const item = document.createElement('div');
     item.className = 'legend-item';
     item.dataset.legSeg = seg;
@@ -250,7 +274,7 @@ function getSelectedValues(set) {
 function getFilteredData() {
   const base = filterFiisByGestora(
     filterFiis(
-      FIIS_DATA,
+      dashboardData,
       getSelectedValues(state.segmentos),
       getSelectedValues(state.tamanhos),
       getSelectedValues(state.ifixes)

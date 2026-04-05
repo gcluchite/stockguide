@@ -1,6 +1,6 @@
 """
 Stock Guide FII
-gerar_dados.py | Extrai dados do Excel e gera data/fiis.json
+gerar_dados.py | Extrai dados do Excel e gera data/fiis.json e data/fiis.js
 
 Uso:
   py -3 auxiliar/gerar_dados.py
@@ -18,7 +18,8 @@ import openpyxl
 
 BASE_DIR = os.path.join(os.path.dirname(__file__), '..')
 SOURCE_DIR = os.path.join(os.path.dirname(__file__), 'fonte')
-OUTPUT = os.path.join(BASE_DIR, 'data', 'fiis.json')
+OUTPUT_JSON = os.path.join(BASE_DIR, 'data', 'fiis.json')
+OUTPUT_JS = os.path.join(BASE_DIR, 'data', 'fiis.js')
 
 xlsx_files = sorted(glob.glob(os.path.join(SOURCE_DIR, '*.xlsx')))
 if not xlsx_files:
@@ -111,11 +112,17 @@ for row in ws.iter_rows(min_row=6, values_only=True):
 
 fiis.sort(key=lambda f: f['valorPatrimonial'] or 0, reverse=True)
 
-os.makedirs(os.path.dirname(OUTPUT), exist_ok=True)
+os.makedirs(os.path.dirname(OUTPUT_JSON), exist_ok=True)
 
-with open(OUTPUT, 'w', encoding='utf-8') as f:
+with open(OUTPUT_JSON, 'w', encoding='utf-8') as f:
     json.dump(fiis, f, ensure_ascii=False, indent=2)
     f.write('\n')
 
-print(f'OK: {len(fiis)} FIIs gerados em {OUTPUT}')
+with open(OUTPUT_JS, 'w', encoding='utf-8') as f:
+    f.write('const FIIS_DATA = ')
+    json.dump(fiis, f, ensure_ascii=False, indent=2)
+    f.write(';\n')
+
+print(f'OK: {len(fiis)} FIIs gerados em {OUTPUT_JSON}')
+print(f'OK: {len(fiis)} FIIs gerados em {OUTPUT_JS}')
 print(f'   {skipped} FIIs ignorados (sem PVP, DY ou VP)')
