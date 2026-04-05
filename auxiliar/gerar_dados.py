@@ -1,9 +1,9 @@
 """
 Stock Guide FII
-gerar_dados.py | Extrai dados do Excel e gera data/fiis.js
+gerar_dados.py | Extrai dados do Excel e gera data/fiis.json
 
 Uso:
-  py -3 scripts/gerar_dados.py
+  py -3 auxiliar/gerar_dados.py
 
 Dependencias:
   pip install openpyxl
@@ -16,16 +16,16 @@ import sys
 
 import openpyxl
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), '..', 'Data')
-OUTPUT = os.path.join(os.path.dirname(__file__), '..', 'data', 'fiis.js')
+BASE_DIR = os.path.join(os.path.dirname(__file__), '..')
+SOURCE_DIR = os.path.join(os.path.dirname(__file__), 'fonte')
+OUTPUT = os.path.join(BASE_DIR, 'data', 'fiis.json')
 
-xlsx_files = sorted(glob.glob(os.path.join(DATA_DIR, '*.xlsx')))
+xlsx_files = sorted(glob.glob(os.path.join(SOURCE_DIR, '*.xlsx')))
 if not xlsx_files:
-    print('ERRO: Nenhum arquivo .xlsx encontrado em /Data')
+    print('ERRO: Nenhum arquivo .xlsx encontrado em /auxiliar/fonte')
     sys.exit(1)
 
 XLSX_PATH = xlsx_files[-1]
-DATA_REF = os.path.basename(XLSX_PATH).split('_')[0][:10]
 print(f'Lendo: {XLSX_PATH}')
 
 wb = openpyxl.load_workbook(XLSX_PATH)
@@ -40,9 +40,9 @@ def safe(v):
     if v is None or v == '' or v == '-':
         return None
     try:
-      return float(v)
+        return float(v)
     except (TypeError, ValueError):
-      return None
+        return None
 
 
 def pct(v):
@@ -113,18 +113,9 @@ fiis.sort(key=lambda f: f['valorPatrimonial'] or 0, reverse=True)
 
 os.makedirs(os.path.dirname(OUTPUT), exist_ok=True)
 
-header = f"""// ============================================================
-// Stock Guide FII | Referencia: {DATA_REF}
-// Gerado automaticamente por scripts/gerar_dados.py
-// Total: {len(fiis)} FIIs com dados completos ({skipped} sem dados essenciais)
-// ============================================================
-
-const FIIS_DATA = """
-
-js_content = header + json.dumps(fiis, ensure_ascii=False, indent=2) + ';\n'
-
 with open(OUTPUT, 'w', encoding='utf-8') as f:
-    f.write(js_content)
+    json.dump(fiis, f, ensure_ascii=False, indent=2)
+    f.write('\n')
 
 print(f'OK: {len(fiis)} FIIs gerados em {OUTPUT}')
 print(f'   {skipped} FIIs ignorados (sem PVP, DY ou VP)')

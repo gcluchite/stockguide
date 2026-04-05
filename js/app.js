@@ -3,6 +3,8 @@ const DEFAULT_LIMITS = {
   y: { min: 0, max: 26 }
 };
 
+let FIIS_DATA = [];
+
 const FILTER_CONFIG = {
   segmentos: {
     containerId: 'seg-pills',
@@ -51,15 +53,57 @@ const state = {
   activeData: []
 };
 
-document.addEventListener('DOMContentLoaded', () => {
-  initRadiusScale(FIIS_DATA);
-  buildAllFilters();
-  buildGestoraFilter();
-  buildLegend();
-  renderChart();
-  updateStats();
+document.addEventListener('DOMContentLoaded', async () => {
   bindModalClose();
+  await initializeDashboard();
 });
+
+async function initializeDashboard() {
+  try {
+    FIIS_DATA = await loadFiisData();
+    initRadiusScale(FIIS_DATA);
+    buildAllFilters();
+    buildGestoraFilter();
+    buildLegend();
+    renderChart();
+    updateStats();
+  } catch (error) {
+    console.error('Erro ao carregar os dados do dashboard:', error);
+    showDataLoadError();
+  }
+}
+
+async function loadFiisData() {
+  const response = await fetch('./data/fiis.json', { cache: 'no-store' });
+  if (!response.ok) {
+    throw new Error(`Falha ao carregar data/fiis.json (${response.status})`);
+  }
+  return response.json();
+}
+
+function showDataLoadError() {
+  const chartTitle = document.querySelector('.chart-title-wrap p');
+  const chartHint = document.querySelector('.chart-hint');
+  const filtersFootnote = document.querySelector('.filters-footnote');
+
+  document.getElementById('stat-count').textContent = 'Erro';
+  document.getElementById('stat-dy').textContent = '—';
+  document.getElementById('stat-pvp').textContent = '—';
+  document.getElementById('stat-pl').textContent = '—';
+  document.getElementById('stat-vm').textContent = '—';
+
+  if (chartTitle) {
+    chartTitle.textContent = 'Nao foi possivel carregar data/fiis.json.';
+  }
+
+  if (chartHint) {
+    chartHint.textContent = 'Confirme se o arquivo data/fiis.json existe e se o site esta sendo servido corretamente.';
+  }
+
+  if (filtersFootnote) {
+    filtersFootnote.textContent = 'Os filtros serao exibidos quando o arquivo data/fiis.json estiver disponivel.';
+  }
+}
 
 function buildAllFilters() {
   Object.entries(FILTER_CONFIG).forEach(([stateKey, config]) => {
