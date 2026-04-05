@@ -164,7 +164,9 @@ function buildFilterGroup(stateKey, config) {
   config.getOptions().forEach(option => {
     const pill = makePill(`${config.containerId}-${option.key}`, option.label, option.dotColor || null, false);
     pill.dataset[config.datasetKey] = option.key;
-    pill.addEventListener('click', () => toggleFilterValue(stateKey, option.key, config.autoZoom));
+    pill.addEventListener('click', event => {
+      handleFilterPillClick(event, stateKey, option.key, config.autoZoom);
+    });
     container.appendChild(pill);
   });
 }
@@ -184,6 +186,34 @@ function makePill(id, label, dotColor, active) {
 
   button.appendChild(document.createTextNode(label));
   return button;
+}
+
+function isMultiSelectEvent(event) {
+  return Boolean(event?.ctrlKey || event?.metaKey);
+}
+
+function handleFilterPillClick(event, stateKey, value, autoZoom) {
+  if (isMultiSelectEvent(event)) {
+    toggleFilterValue(stateKey, value, autoZoom);
+    return;
+  }
+
+  selectSingleFilterValue(stateKey, value, autoZoom);
+}
+
+function selectSingleFilterValue(stateKey, value, autoZoom) {
+  const set = state[stateKey];
+  const alreadySingleSelected = set.size === 1 && set.has(value);
+
+  if (alreadySingleSelected) {
+    set.clear();
+  } else {
+    set.clear();
+    set.add(value);
+  }
+
+  syncFilterPills(stateKey);
+  refresh({ autoZoom: autoZoom || hasSegmentSelection() });
 }
 
 function toggleFilterValue(stateKey, value, autoZoom) {
