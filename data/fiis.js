@@ -1,3 +1,9 @@
+const FIIS_META = {
+  "referencia": "02/06/2026",
+  "base": 255,
+  "fonte": "BTG Pactual",
+  "arquivoFonte": "2026-06-02T093116.596_BTGSGF_2_6_2026.xlsx"
+};
 const FIIS_DATA = [
   {
     "ticker": "KNCR11",
